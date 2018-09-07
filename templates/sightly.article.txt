@@ -1,0 +1,10 @@
+<div class="en-blog">
+  {% section 'sightly-settings' %}
+  {% section 'sightly-header' %}
+  <div class="page-width">
+    <div class="grid grid--uniform">
+      {% section 'sightly-main-column-article' %}
+      {% section 'sightly-sidebar' %}
+    </div>
+  </div>
+</div>

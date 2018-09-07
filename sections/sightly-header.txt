@@ -1,0 +1,381 @@
+{{ 'sightly.scss.css' | asset_url | stylesheet_tag }}
+
+{% assign showTitle = false %}
+{% if section.settings.enable_blogtitle and template contains 'blog' %}
+	{% assign showTitle = true %}
+{% endif %}
+{% if section.settings.enable_blogtitle_article and template contains 'article' %}
+	{% assign showTitle = true %}
+{% endif %}
+
+{% assign showBanner = false %}
+{% if section.settings.enable_banner and template contains 'blog' %}
+	{% assign showBanner = true %}
+{% endif %}
+{% if section.settings.enable_banner_article and template contains 'article' %}
+	{% assign showBanner = true %}
+{% endif %}
+
+{% assign showNav = false %}
+{% if section.settings.enable_blog_nav and template contains 'blog' %}
+	{% assign showNav = true %}
+{% endif %}
+{% if section.settings.enable_blog_nav_article and template contains 'article' %}
+	{% assign showNav = true %}
+{% endif %}
+
+<div class="page-width {% unless showTitle %}hidden_title{% endunless %}">
+  {% if showTitle %}
+  <header class="section-header text-center">
+    <h1>{{ blog.title }}</h1>
+  </header>
+  {% endif %}
+</div><!--page-width-->
+
+  {% if showBanner %}
+    {% unless section.settings.blog-banner-width == 'full-width' %}
+    <div class="page-width">
+    {% endunless %}
+      <div class="blog-banner">
+
+        {% if section.settings.custom_banner_heading != blank or section.settings.custom_banner_subheading != blank or section.settings.custom_banner_buttontext != blank %}
+          <div class="banner-text">
+            {% if section.settings.enable_blogtitle %}
+                <h2>{{ section.settings.custom_banner_heading }}</h2>
+            {% else %}
+                <h1>{{ section.settings.custom_banner_heading }}</h1> 
+            {% endif %}
+            {% if section.settings.custom_banner_subheading != blank %}
+                <p>{{ section.settings.custom_banner_subheading }}</p>
+            {% endif %}
+            {% if section.settings.custom_banner_buttontext != blank %}
+                <a class="button btn" href="{{ section.settings.custom_banner_buttonurl }}">{{ section.settings.custom_banner_buttontext }}</a>
+            {% endif %}
+          </div>
+        {% endif %}
+        {% assign custom_banner_img = section.settings.custom_banner %}
+        <img alt="{{ section.settings.custom_banner.alt }}" {% if section.settings.enable_mobile_banner %}class="medium-down--hidden"{% endif %} src="{{ custom_banner_img | img_url: '1400x' }}" />
+        {% if section.settings.enable_mobile_banner %}
+            {% assign custom_mobile_banner_img = section.settings.custom_mobile_banner %}
+            <img alt="{{ section.settings.custom_mobile_banner.alt }}" class="medium-down--visible" src="{{ custom_mobile_banner_img | img_url: '1000x' }}" />
+        {% endif %}
+      </div>
+    {% unless section.settings.blog-banner-width == 'full-width' %}
+    </div>
+    {% endunless %}
+  {% endif %}
+
+{% if showNav %}
+<div class="page-width">
+    {% if section.blocks.size > 0 %}
+      <div class="blog-navigation grid grid--uniform medium-up--text-{{ section.settings.blog_category_nav_alignment }} small--text-{{ section.settings.blog_category_nav_alignment }}">
+        {% assign categoryWidth = 'medium-up--one-half' %}
+        {% case section.settings.cats_per_row %}
+            {% when '2' %}
+                {% assign categoryWidth = 'medium-up--one-half' %}
+            {% when '3' %}
+                {% assign categoryWidth = 'medium-up--one-third' %}
+            {% when '4' %}
+                {% assign categoryWidth = 'medium-up--one-quarter' %}
+            {% when '5' %}
+                {% assign categoryWidth = 'medium-up--one-fifth' %}
+            {% when '6' %}
+                {% assign categoryWidth = 'medium-up--one-sixth' %}
+            {% when '8' %}
+                {% assign categoryWidth = 'medium-up--one-eighth' %}
+            {% when '10' %}
+                {% assign categoryWidth = 'medium-up--one-tenth' %}
+            {% when '12' %}
+                {% assign categoryWidth = 'medium-up--one-twelfth' %}
+        {% endcase %}
+        {% assign categoryWidthMobile = 'small--one-half' %}
+        {% case section.settings.cats_per_row_mobile %}
+            {% when '1' %}
+                {% assign categoryWidthMobile = 'small--one-whole' %}
+        	{% when '2' %}
+                {% assign categoryWidthMobile = 'small--one-half' %}
+            {% when '3' %}
+                {% assign categoryWidthMobile = 'small--one-third' %}
+            {% when '4' %}
+                {% assign categoryWidthMobile = 'small--one-quarter' %}
+        {% endcase %}
+        {% for block in section.blocks %}
+            {% if section.settings.blog_category_nav_style == 'buttons' %}
+        		<div class="{{ categoryWidth }} {{ categoryWidthMobile }} grid__item blog-button-nav"><a class="btn btn--secondary" href="{{ block.settings.category_link }}">{{ block.settings.category_label }}</a></div>
+            {% else %}
+                <a title="{{ block.settings.category_label }}" class="blog-image-nav {{ categoryWidth }} {{ categoryWidthMobile }} grid__item" href="{{ block.settings.category_link }}"><img alt="{{ block.settings.category_label }}" src="{{ block.settings.image | img_url: '600x' }}" /></a>
+            {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+.blog-banner .banner-text {
+  top:{{ section.settings.text_voffset }}%;
+}
+</style>
+
+{% schema %}
+  {
+    "name": "Blog header",
+    "settings": [
+	  {
+        "type": "checkbox",
+        "id": "enable_blogtitle",
+        "label": "Show blog title on main blog page",
+        "default": false
+      },
+	  {
+        "type": "checkbox",
+        "id": "enable_blogtitle_article",
+        "label": "Show blog title on article pages",
+        "default": false
+      },
+	  {
+        "type": "header",
+        "content": "Banner"
+      },
+	  {
+        "type": "checkbox",
+        "id": "enable_banner",
+        "label": "Show banner on main blog page",
+        "default": true
+      },
+	  {
+        "type": "checkbox",
+        "id": "enable_banner_article",
+        "label": "Show banner on article pages",
+        "default": false
+      },
+	  {
+        "type": "select",
+        "id": "blog-banner-width",
+        "label": "Banner width",
+        "default": "full-width",
+        "options": [
+          {
+            "value": "full-width",
+            "label": "Full width"
+          },
+          {
+            "value": "page-width",
+            "label": "Page width"
+          }
+        ]
+      },
+	  {
+        "type": "image_picker",
+        "id": "custom_banner",
+        "label": "Banner image",
+        "info": "Recommended dimensions: Approximately 1200px by 400px."
+      },
+	  {
+        "type": "checkbox",
+        "id": "enable_mobile_banner",
+        "label": "Show mobile banner image",
+        "default": false
+      },
+	  {
+        "type": "image_picker",
+        "id": "custom_mobile_banner",
+        "label": "Mobile banner image",
+        "info": "Recommended dimensions: Approximately 1000px by 1000px."
+      },
+	  {
+        "type": "text",
+        "id": "custom_banner_heading",
+        "label": "Heading"
+      },
+	  {
+        "type": "text",
+        "id": "custom_banner_subheading",
+        "label": "Subheading"
+      },
+	  {
+        "type": "text",
+        "id": "custom_banner_buttontext",
+        "label": "Button text"
+      },
+	  {
+        "type": "url",
+        "id": "custom_banner_buttonurl",
+        "label": "Button link"
+      },
+	  {
+        "type": "select",
+        "id": "custom_banner_textalignment",
+        "label": "Text alignment",
+        "default": "center",
+        "options": [
+          {
+            "value": "center",
+            "label": "Center"
+          },
+          {
+            "value": "left",
+            "label": "Left"
+          },
+		  {
+            "value": "right",
+            "label": "Right"
+          }
+        ]
+      },
+	  {
+        "type": "range",
+        "id": "text_voffset",
+		"min": 1,
+		"max": 90,
+		"default": 40,
+        "label": "Text offset from top (%)"
+      },
+	  {
+        "type": "header",
+        "content": "Featured blog category navigation"
+      },
+	  {
+        "type": "checkbox",
+        "id": "enable_blog_nav",
+        "label": "Show blog navigation on main blog page",
+        "default": false
+      },
+	  {
+        "type": "checkbox",
+        "id": "enable_blog_nav_article",
+        "label": "Show blog navigation on article pages",
+        "default": false
+      },
+	  {
+        "type": "select",
+        "id": "blog_category_nav_style",
+        "label": "Navigation style",
+        "default": "buttons",
+        "options": [
+          {
+            "value": "buttons",
+            "label": "Buttons"
+          },
+		  {
+            "value": "images",
+            "label": "Images"
+          }
+        ]
+      },
+	  {
+        "type": "select",
+        "id": "blog_category_nav_alignment",
+        "label": "Navigation alignment",
+        "default": "center",
+		"info": "Applies to buttons and links only",
+        "options": [
+          {
+            "value": "left",
+            "label": "Left"
+          },
+          {
+            "value": "center",
+            "label": "Center"
+          },
+		  {
+            "value": "right",
+            "label": "Right"
+          }
+        ]
+      },
+	  {
+        "type": "select",
+        "id": "cats_per_row",
+        "label": "Categories per row",
+        "default": "4",
+        "options": [
+          {
+            "value": "2",
+            "label": "2"
+          },
+          {
+            "value": "3",
+            "label": "3"
+          },
+		  {
+            "value": "4",
+            "label": "4"
+          },
+		  {
+            "value": "5",
+            "label": "5"
+          },
+		  {
+            "value": "6",
+            "label": "6"
+          },
+		  {
+            "value": "8",
+            "label": "8"
+          },
+		  {
+            "value": "10",
+            "label": "10"
+          },
+		  {
+            "value": "12",
+            "label": "12"
+          }
+        ]
+      },
+	  {
+        "type": "select",
+        "id": "cats_per_row_mobile",
+        "label": "Categories per row on mobile",
+        "default": "2",
+        "options": [
+          {
+            "value": "1",
+            "label": "1"
+          },
+		  {
+            "value": "2",
+            "label": "2"
+          },
+          {
+            "value": "3",
+            "label": "3"
+          },
+		  {
+            "value": "4",
+            "label": "4"
+          }
+        ]
+      }
+    ],
+	"blocks": [
+      {
+        "type": "featured_category_block",
+        "name": "Category",
+        "settings": [
+          {
+            "type": "text",
+            "id": "category_label",
+            "label": "Label",
+            "default": "Category Name"
+          },
+	  	  {
+            "type": "url",
+            "id": "category_link",
+            "label": "Link",
+            "info": "Enter the URL of any blog tag or blog."
+          },
+		  {
+            "type": "image_picker",
+            "id": "image",
+            "label": "Image",
+			"info": "Only shows if you've selected 'Images' as the navigation style above."
+          }
+        ]
+      }
+    ]
+  }
+{% endschema %}
+
+

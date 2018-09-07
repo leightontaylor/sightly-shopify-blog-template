@@ -1,0 +1,692 @@
+{% comment %}
+Count up how many total articles are on the page for pagination
+{% endcomment %}
+{% assign paginate_by = 0 %}
+{% for block in section.blocks %}
+  {% if block.type == 'article_feed' %}
+    {% assign articles_to_show = block.settings.articles_to_show %}
+    {% for article in blog.articles limit:articles_to_show %}
+      {% assign paginate_by = paginate_by | plus: 1 %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+<!--{{ paginate_by }}-->
+
+{% assign blog_feed_count = 0 %}
+
+{% assign main_column_width = 'small-one-whole' %}
+{% if page_layout == 'one-sidebar-left' or page_layout == 'one-sidebar-right' %}
+  {% assign main_column_width = 'small-one-whole medium-up--three-quarters' %}
+{% elsif page_layout == 'two-sidebars' %}
+  {% assign main_column_width = 'small-one-whole medium-up--one-half' %}
+{% endif %}
+
+{% paginate blog.articles by paginate_by %}
+
+{% for block in section.blocks %}
+
+  {% if block.type == 'article_feed' %}
+   
+  {% assign grid_article_width = 'medium-up--one-half' %}
+  {% if block.settings.grid_articles_per_row == 3 %}
+  {% assign grid_article_width = 'medium-up--one-third' %}
+  {% elsif block.settings.grid_articles_per_row == 4 %}
+  {% assign grid_article_width = 'medium-up--one-quarter' %}
+  {% elsif block.settings.grid_articles_per_row == 5 %}
+  {% assign grid_article_width = 'medium-up--one-fifth' %}
+  {% endif %}
+
+  {% assign articles_to_show = block.settings.articles_to_show %}
+  {% assign article_offset = block.settings.article_offset %}
+
+  {% assign offset_needed = false %}
+  {% assign blog_feed_count = blog_feed_count | plus: 1 %} {% comment %}Count each block we have on the page with an article feed{% endcomment %}
+  <!--blog_feed_count: {{ blog_feed_count }}-->
+  {% if blog_feed_count == 1 %}
+    {% assign pagination_blog = block.settings.blog_feed %}  {% comment %}Since this is the first blog feed on the page, we'll use it as the "primary" blog for pagination purposes. If a second blog is used in another block, we'll use liquid to offset the article count depending on which pagination count is being viewed.{% endcomment %}
+  {% endif %}
+
+  {% unless pagination_blog == block.settings.blog_feed %}  
+  {% assign offset_needed = true %} {% comment %}If the current block is using the primary blog feed, we'll use default pagination. Otherwise, we'll need to calculate a custom offset depending on which page the user is viewing.{% endcomment %}
+  {% endunless %}
+
+  {% assign feed_offset = 0 %}
+  {% if offset_needed %}
+  {% assign offset_per_page = articles_to_show %}
+  {% if paginate.current_page == 2 %}
+    <!-- {{ paginate.current_page }} -->
+    {% assign feed_offset = paginate.current_page | times: offset_per_page %}
+    <!-- {{ feed_offset }} -->
+  {% endif %}
+  {% endif %}
+
+  <div class="{% if block.settings.layout == 'list' %}blog--list-view{% endif %}" {{ block.shopify_attributes }}>
+    {% if block.settings.layout == 'grid' %}
+        <div class="grid grid--uniform grid--blog block-{{ block.id }}">
+          {% for article in blog.articles offset:article_offset limit:articles_to_show %}
+            <div class="grid__item {{ grid_article_width }}">
+              
+              {% if section.settings.blog_show_images %}
+                {% if section.settings.article-title-position == 'below' %}
+                  {% if article.image %}
+                    <div class="article__grid-image-wrapper">
+                      <a href="{{ article.url }}" style="padding-top:{{ 1 | divided_by: article.image.aspect_ratio | times: 100}}%;"  class="article__grid-image-container">
+                        <img
+                             class="article__grid-image"
+                             src="{{ article.image | img_url: '600x600' }}"
+                             alt="{{ article.image.alt | escape }}">
+                      </a>
+                    </div>
+                    <noscript>
+                      <a href="{{ article.url }}" class="article__grid-image-wrapper">
+                        {{ article | img_url: '345x', scale: 2 | img_tag: article.title, 'article__grid-image' }}
+                      </a>
+                    </noscript>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+              <div class="article--listing article__grid-meta {% if section.settings.blog_show_images and section.settings.article-title-position == 'below' and article.image %}article__grid-meta--has-image{% endif %}">
+                <h2 class="article__title h2">
+                  <a href="{{ article.url }}">{{ article.title }}</a>
+                </h2>
+                
+                {% if block.settings.blog_show_author or block.settings.blog_show_date %}
+              <span class="article__meta meta__text">
+                  {% if block.settings.blog_show_author %}
+                  {% assign articleAuthor = article.author %}
+                  {% for tag in article.tags %}
+                    {% if tag contains 'author:' %}
+                      {% assign articleAuthor = tag | remove: 'author: ' | remove: 'author:' %}
+                      {% break %}
+                    {% endif %}
+                  {% endfor %}
+                  <span class="article__author">{{ articleAuthor }}</span>
+                  {% endif %}
+
+                  {% if block.settings.blog_show_date %}
+                    <span class="article__date">
+                      {{ article.published_at | time_tag: format: 'month_day_year' }}
+                    </span>
+                  {% endif %}
+                </span>
+                {% endif %}
+                
+                {% if section.settings.blog_show_images %}
+                  {% if section.settings.article-title-position == 'above' %}
+                    {% if article.image %}
+                      <div class="article__grid-image-wrapper">
+                        <a href="{{ article.url }}" style="padding-top:{{ 1 | divided_by: article.image.aspect_ratio | times: 100}}%;"  class="article__grid-image-container">
+                          <img
+                               class="article__grid-image"
+                               src="{{ article.image | img_url: '600x600' }}"
+                               alt="{{ article.image.alt | escape }}">
+                        </a>
+                      </div>
+                      <noscript>
+                        <a href="{{ article.url }}" class="article__grid-image-wrapper">
+                          {{ article | img_url: '345x', scale: 2 | img_tag: article.title, 'article__grid-image' }}
+                        </a>
+                      </noscript>
+                    {% endif %}
+                  {% endif %}
+                {% endif %}                
+
+                <div class="rte article__grid-excerpt">
+                  {% if article.excerpt.size > 0 %}
+                    {{ article.excerpt }}
+                  {% else %}
+                    {% assign truncateWords = block.settings.article_truncate %}
+                    {% unless truncateWords == 0 %}
+                    {{ article.content | strip_html | truncatewords: truncateWords }}
+                    {% endunless %}
+                  {% endif %}
+                </div>
+
+                <ul class="list--inline article__meta-buttons">
+                  {% if block.settings.blog_show_readmore %}
+                  <li>
+                    <a href="{{ article.url }}" class="btn btn--secondary btn--small">
+                      {{ block.settings.readmore_label }}
+                    </a>
+                  </li>
+                  {% endif %}
+
+                  {% if blog.comments_enabled? and article.comments_count > 0 %}
+                    <li>
+                      <a href="{{ article.url }}#comments" class="btn btn--small btn--link">
+                        {{ 'blogs.comments.comments_with_count' | t: count: article.comments_count }}
+                      </a>
+                    </li>
+                  {% endif %}
+                </ul>
+              </div>
+              
+            </div><!--grid__item-->
+          {% endfor %}
+        </div>
+    {% else %}
+      {% for article in blog.articles limit:articles_to_show offset:article_offset  %}
+      {% if section.settings.blog_show_images %}
+          {% if section.settings.article-title-position == 'below' %}
+            {% if article.image %}
+              <div class="article__grid-image-wrapper">
+                <a href="{{ article.url }}" style="padding-top:{{ 1 | divided_by: article.image.aspect_ratio | times: 100}}%;"  class="article__grid-image-container">
+                  <img
+                       class="article__grid-image"
+                       src="{{ article.image | img_url: '600x600' }}"
+                       alt="{{ article.image.alt | escape }}">
+                </a>
+              </div>
+              <noscript>
+                <a href="{{ article.url }}" class="article__grid-image-wrapper">
+                  {{ article | img_url: '345x', scale: 2 | img_tag: article.title, 'article__grid-image' }}
+                </a>
+              </noscript>
+            {% endif %}
+          {% endif %}
+        {% endif %}
+        <div class="article--listing {% if section.settings.blog_show_images and section.settings.article-title-position == 'below' and article.image %}article__grid-meta--has-image{% endif %}">
+          
+          <h2 class="article__title h2"><a href="{{ article.url }}">{{ article.title }}</a></h2>
+          
+          {% if block.settings.blog_show_author or block.settings.blog_show_date %}
+          <span class="article__meta">
+            {% if block.settings.blog_show_author %}
+            {% assign articleAuthor = article.author %}
+            {% for tag in article.tags %}
+              {% if tag contains 'author:' %}
+                {% assign articleAuthor = tag | remove: 'author: ' | remove: 'author:' %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+            <span class="article__author">{{ articleAuthor }}</span>
+            {% endif %}
+
+            {% if block.settings.blog_show_date %}
+            <span class="article__date">
+              {{ article.published_at | time_tag: format: 'month_day_year' }}
+            </span>
+            {% endif %}
+          </span>
+          {% endif %}
+
+          {% if section.settings.blog_show_images %}
+            {% if section.settings.article-title-position == 'above' %}
+              {% if article.image %}
+                <div class="article__grid-image-wrapper">
+                  <a href="{{ article.url }}" style="padding-top:{{ 1 | divided_by: article.image.aspect_ratio | times: 100}}%;"  class="article__grid-image-container">
+                    <img
+                         class="article__grid-image"
+                         src="{{ article.image | img_url: '600x600' }}"
+                         alt="{{ article.image.alt | escape }}">
+                  </a>
+                </div>
+                <noscript>
+                  <a href="{{ article.url }}" class="article__grid-image-wrapper">
+                    {{ article | img_url: '345x', scale: 2 | img_tag: article.title, 'article__grid-image' }}
+                  </a>
+                </noscript>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+
+          <div class="rte">
+            {% if article.excerpt.size > 0 %}
+            {{ article.excerpt }}
+            {% else %}
+            {% assign truncateWords = block.settings.article_truncate %}
+            {% unless truncateWords == 0 %}
+            {{ article.content | strip_html | truncatewords: truncateWords }}
+            {% endunless %}
+            {% endif %}
+          </div>
+
+          <ul class="list--inline article__meta-buttons">
+            {% if block.settings.blog_show_readmore %}
+              <li>
+                <a href="{{ article.url }}" class="btn btn--secondary btn--small">
+                  {{ block.settings.readmore_label }}
+                </a>
+              </li>
+            {% endif %}
+
+            {% if blog.comments_enabled? and article.comments_count == 0 %}
+            <li>
+              <a href="{{ article.url }}#comment_form" class="btn btn--secondary btn--small">
+                {{ 'blogs.comments.title' | t }}
+              </a>
+            </li>
+            {% endif %}
+
+            {% if blog.comments_enabled? and article.comments_count > 0 %}
+            <li>
+              <a href="{{ article.url }}#comments" class="btn btn--secondary btn--small">
+                {{ 'blogs.comments.comments_with_count' | t: count: article.comments_count }}
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="clearfix"></div>
+  </div>
+
+  
+
+  {% elsif block.type == 'image_blocks' %}
+
+  <div class="blog-navigation grid grid--uniform medium-up--text-center small--text-center" {{ block.shopify_attributes }}>
+      {% assign categoryWidth = 'medium-up--one-half' %}
+      {% assign imageWidth = '800x' %}
+      {% case block.settings.blocks_per_row %}
+          {% when 1 %}
+              {% assign categoryWidth = 'medium-up--one-whole' %}
+            {% assign imageWidth = '1200x' %}
+          {% when 2 %}
+              {% assign categoryWidth = 'medium-up--one-half' %}
+            {% assign imageWidth = '800x' %}
+          {% when 3 %}
+              {% assign categoryWidth = 'medium-up--one-third' %}
+            {% assign imageWidth = '600x' %}
+          {% when 4 %}
+              {% assign categoryWidth = 'medium-up--one-quarter' %}
+            {% assign imageWidth = '600x' %}
+          {% when 5 %}
+              {% assign categoryWidth = 'medium-up--one-fifth' %}
+              {% assign imageWidth = '600x' %}
+      {% endcase %}
+      {% assign categoryWidthMobile = 'small--one-half' %}
+      {% case block.settings.blocks_per_row_mobile %}
+          {% when 1 %}
+              {% assign categoryWidthMobile = 'small--one-whole' %}
+          {% when 2 %}
+              {% assign categoryWidthMobile = 'small--one-half' %}
+          {% when 3 %}
+              {% assign categoryWidthMobile = 'small--one-third' %}
+          {% when 4 %}
+              {% assign categoryWidthMobile = 'small--one-quarter' %}
+      {% endcase %}
+      {% if block.settings.enable_block_1 %}
+          <a title="{{ block.settings.block_1_image.alt }}" class="blog-image-nav {{ categoryWidth }} {{ categoryWidthMobile }} grid__item" href="{{ block.settings.block_1_link }}">
+            <div class="image-wrap">
+              <img alt="{{ block.settings.block_1_image.alt }}" src="{{ block.settings.block_1_image | img_url: imageWidth }}" />
+            </div>
+          </a>
+      {% endif %}
+      {% if block.settings.enable_block_2 %}
+          <a title="{{ block.settings.block_2_image.alt }}" class="blog-image-nav {{ categoryWidth }} {{ categoryWidthMobile }} grid__item" href="{{ block.settings.block_2_link }}">
+            <div class="image-wrap">
+              <img alt="{{ block.settings.block_2_image.alt }}" src="{{ block.settings.block_2_image | img_url: imageWidth }}" />
+            </div>
+          </a>
+      {% endif %}
+      {% if block.settings.enable_block_3 %}
+          <a title="{{ block.settings.block_3_image.alt }}" class="blog-image-nav {{ categoryWidth }} {{ categoryWidthMobile }} grid__item" href="{{ block.settings.block_3_link }}">
+            <div class="image-wrap">
+              <img alt="{{ block.settings.block_3_image.alt }}" src="{{ block.settings.block_3_image | img_url: imageWidth }}" />
+            </div>
+          </a>
+      {% endif %}
+    </div>
+
+  {% endif %}
+
+  <script>
+    // Make article tiles same height
+    $(document).ready(function(){
+        // Select and loop the container element of the elements you want to equalise
+        $('.block-{{ block.id }}').each(function(){  
+          // Cache the highest
+          var highestBox = 0;
+          // Select and loop the elements you want to equalise
+          $('.article--listing', this).each(function(){
+            // If this box is higher than the cached highest then store it
+            if($(this).height() > highestBox) {
+              highestBox = $(this).height(); 
+            }
+          });  
+          // Set the height of all those children to whichever was highest 
+          $('.article--listing',this).height(highestBox);
+        }); 
+    });
+  </script>
+
+{% endfor %}
+
+{% if section.settings.blog_show_pagination %}
+  {% if paginate.pages > 1 %}
+    <ul class="list--inline pagination">
+      <li>
+        {% unless paginate.previous.is_link %}
+        <div class="btn btn--secondary btn--narrow btn--disabled">
+          <svg aria-hidden="true" focusable="false" role="presentation" class="icon icon--wide icon-arrow-left" viewBox="0 0 20 8"><path d="M4.814 7.555C3.95 6.61 3.2 5.893 2.568 5.4 1.937 4.91 1.341 4.544.781 4.303v-.44a9.933 9.933 0 0 0 1.875-1.196c.606-.485 1.328-1.196 2.168-2.134h.752c-.612 1.309-1.253 2.315-1.924 3.018H19.23v.986H3.652c.495.632.84 1.1 1.036 1.406.195.306.485.843.869 1.612h-.743z" fill="#000" fill-rule="evenodd"/></svg>
+          <span class="icon__fallback-text">{{ 'general.pagination.previous' | t }}</span>
+        </div>
+        {% else %}
+        <a href="{{ paginate.previous.url }}" class="btn btn--secondary btn--narrow">
+          <svg aria-hidden="true" focusable="false" role="presentation" class="icon icon--wide icon-arrow-left" viewBox="0 0 20 8"><path d="M4.814 7.555C3.95 6.61 3.2 5.893 2.568 5.4 1.937 4.91 1.341 4.544.781 4.303v-.44a9.933 9.933 0 0 0 1.875-1.196c.606-.485 1.328-1.196 2.168-2.134h.752c-.612 1.309-1.253 2.315-1.924 3.018H19.23v.986H3.652c.495.632.84 1.1 1.036 1.406.195.306.485.843.869 1.612h-.743z" fill="#000" fill-rule="evenodd"/></svg>
+          <span class="icon__fallback-text">{{ 'general.pagination.previous' | t }}</span>
+        </a>
+        {% endunless %}
+      </li>
+      <li class="pagination__text">
+        {{ 'general.pagination.current_page' | t: current: paginate.current_page, total: paginate.pages }}
+      </li>
+      <li>
+        {% unless paginate.next.is_link %}
+        <div class="btn btn--secondary btn--narrow btn--disabled">
+          <svg aria-hidden="true" focusable="false" role="presentation" class="icon icon--wide icon-arrow-right" viewBox="0 0 20 8"><path d="M15.186.445c.865.944 1.614 1.662 2.246 2.154.631.491 1.227.857 1.787 1.098v.44a9.933 9.933 0 0 0-1.875 1.196c-.606.485-1.328 1.196-2.168 2.134h-.752c.612-1.309 1.253-2.315 1.924-3.018H.77v-.986h15.577c-.495-.632-.84-1.1-1.035-1.406-.196-.306-.486-.843-.87-1.612h.743z" fill="#000" fill-rule="evenodd"/></svg>
+          <span class="icon__fallback-text">{{ 'general.pagination.next' | t }}</span>
+        </div>
+        {% else %}
+        <a href="{{ paginate.next.url }}" class="btn btn--secondary btn--narrow">
+          <svg aria-hidden="true" focusable="false" role="presentation" class="icon icon--wide icon-arrow-right" viewBox="0 0 20 8"><path d="M15.186.445c.865.944 1.614 1.662 2.246 2.154.631.491 1.227.857 1.787 1.098v.44a9.933 9.933 0 0 0-1.875 1.196c-.606.485-1.328 1.196-2.168 2.134h-.752c.612-1.309 1.253-2.315 1.924-3.018H.77v-.986h15.577c-.495-.632-.84-1.1-1.035-1.406-.196-.306-.486-.843-.87-1.612h.743z" fill="#000" fill-rule="evenodd"/></svg>
+          <span class="icon__fallback-text">{{ 'general.pagination.next' | t }}</span>
+        </a>
+        {% endunless %}
+      </li>
+    </ul>
+  {% endif %}
+{% endif %}
+
+{% endpaginate %}
+
+{% schema %}
+  {
+    "name": "Blog articles",
+    "settings": [
+    {
+        "type": "select",
+        "id": "article-display",
+        "label": "Article display",
+        "default": "excerpts",
+        "options": [
+          {
+          "value": "excerpts",
+          "label": "Show excerpts or truncated content only"
+          },
+          {
+          "value": "full-articles",
+          "label": "Show full articles"
+          }
+        ]
+      },
+    {
+        "type": "checkbox",
+        "id": "blog_show_images",
+        "label": "Show article images",
+        "default": true
+      },
+    {
+        "type": "select",
+        "id": "article-title-position",
+        "label": "Article title position",
+        "default": "below",
+        "options": [
+          {
+          "value": "above",
+          "label": "Above article images"
+          },
+          {
+          "value": "below",
+          "label": "Below article images"
+          }
+        ]
+      },
+    {
+        "type": "select",
+        "id": "article-title-alignment",
+        "label": "Article title alignment",
+        "default": "left",
+        "options": [
+          {
+          "value": "left",
+          "label": "Left"
+          },
+          {
+          "value": "center",
+          "label": "Center"
+          },
+      {
+          "value": "right",
+          "label": "Right"
+          }
+        ]
+      },
+    {
+        "type": "checkbox",
+        "id": "blog_show_pagination",
+        "label": "Show pagination",
+        "default": false
+      },
+    {
+        "type": "header",
+        "content": "Comments"
+      },
+    {
+        "type": "text",
+        "id": "blog_comment_link_text",
+        "label": "Comment link text",
+        "default": "Leave a Comment"
+      },
+    {
+        "type": "checkbox",
+        "id": "blog_show_comment_count",
+        "label": "Show comment count on main blog page",
+        "default": true
+      },
+    {
+        "type": "checkbox",
+        "id": "article_show_comment_count",
+        "label": "Show comment count on article pages",
+        "default": true
+      },
+    {
+        "type": "select",
+        "id": "comments-type",
+        "label": "Comments platform",
+        "default": "shopify-comments",
+        "options": [
+          {
+          "value": "shopify-comments",
+          "label": "Shopify comments"
+          },
+          {
+          "value": "facebook-comments",
+          "label": "Facebook comments"
+          },
+      {
+          "value": "disqus-comments",
+          "label": "DISQUS comments"
+          }
+        ]
+      },
+    {
+        "type": "text",
+        "id": "disqus_shortname",
+        "label": "Your DISQUS forum shortname",
+        "info": "[Click here](https:\/\/disqus.com\/profile\/signup\/?next=\/admin\/create\/) to sign up for DISQUS and get your forum shortname."
+      }
+    ],
+  "blocks": [
+      {
+        "type": "article_feed",
+        "name": "Article feed",
+        "settings": [
+      {
+            "type": "blog",
+            "id": "blog_feed",
+            "label": "Select a blog"
+          },
+      {
+            "type": "select",
+            "id": "layout",
+            "label": "Article layout",
+            "default": "list",
+            "options": [
+              {
+                "value": "list",
+                "label": "List"
+              },
+              {
+                "value": "grid",
+                "label": "Grid"
+              }
+            ]
+          },
+      {
+            "type": "checkbox",
+            "id": "blog_show_author",
+            "label": "Show author",
+            "default": true
+          },
+          {
+            "type": "checkbox",
+            "id": "blog_show_date",
+            "label": "Show date",
+            "default": true
+          },
+      {
+            "type": "checkbox",
+            "id": "blog_show_readmore",
+            "label": "Show \"Read More\" button",
+            "default": false
+          },
+      {
+            "type": "text",
+            "id": "readmore_label",
+            "label": "\"Read More\" button label",
+      "default": "Read More"
+          },
+      {
+            "type": "range",
+            "id": "grid_articles_per_row",
+            "min": 2,
+            "max": 5,
+            "default": 3,
+            "label": "Grid articles per row"
+          },
+      {
+            "type": "range",
+            "id": "article_truncate",
+            "min": 0,
+            "max": 300,
+            "default": 50,
+      "step": 5,
+            "label": "Truncate article words",
+      "info": "To override this, enter an excerpt for each article."
+          },
+      {
+            "type": "range",
+            "id": "articles_to_show",
+            "min": 1,
+            "max": 50,
+            "default": 6,
+            "label": "Number of articles to show"
+          },
+      {
+            "type": "range",
+            "id": "article_offset",
+            "min": 0,
+            "max": 50,
+            "default": 0,
+            "label": "Offset article feed",
+      "info": "Number of articles to skip before beginning feed. This is useful if splitting articles up between multiple article feed blocks."
+          }
+        ]
+      },
+    {
+        "type": "image_blocks",
+        "name": "Image blocks",
+        "settings": [
+      {
+            "type": "range",
+            "id": "blocks_per_row",
+            "min": 1,
+            "max": 3,
+            "default": 2,
+            "label": "Blocks per row"
+          },
+      {
+            "type": "range",
+            "id": "blocks_per_row_mobile",
+            "min": 1,
+            "max": 3,
+            "default": 2,
+            "label": "Blocks per row on mobile"
+          },
+      {
+            "type": "header",
+            "content": "Block 1"
+          },
+      {
+            "type": "checkbox",
+            "id": "enable_block_1",
+            "label": "Enable block 1",
+            "default": true
+          },
+        {
+            "type": "url",
+            "id": "block_1_link",
+            "label": "Link",
+            "info": "Enter any URL for this block to link to"
+          },
+      {
+            "type": "image_picker",
+            "id": "block_1_image",
+            "label": "Image"
+          },
+      {
+            "type": "header",
+            "content": "Block 2"
+          },
+      {
+            "type": "checkbox",
+            "id": "enable_block_2",
+            "label": "Enable block 2",
+            "default": true
+          },
+        {
+            "type": "url",
+            "id": "block_2_link",
+            "label": "Link",
+            "info": "Enter any URL for this block to link to"
+          },
+      {
+            "type": "image_picker",
+            "id": "block_2_image",
+            "label": "Image"
+          },
+      {
+            "type": "header",
+            "content": "Block 3"
+          },
+      {
+            "type": "checkbox",
+            "id": "enable_block_3",
+            "label": "Enable block 3",
+            "default": true
+          },
+        {
+            "type": "url",
+            "id": "block_3_link",
+            "label": "Link",
+            "info": "Enter any URL for this block to link to"
+          },
+      {
+            "type": "image_picker",
+            "id": "block_3_image",
+            "label": "Image"
+          }
+        ]
+      }
+  ]
+  }
+{% endschema %}
+
+
+
+
